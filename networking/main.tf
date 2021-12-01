@@ -34,6 +34,13 @@ resource "aws_subnet" "ozy_public_subnet" {
         Name = "ozy_public_${count.index + 1}"
     }
 }
+
+resource "aws_route_table_association" "ozy_pub-asoc" {
+    count = var.public_sn_count
+    subnet_id = aws_subnet.ozy_public_subnet.*.id[count.index]
+    route_table_id = aws_route_table.ozy_public_rt.id
+}
+
 resource "aws_subnet" "ozy_private_subnet" {
     count = var.private_sn_count
     vpc_id = aws_vpc.ozy_vpc.id
@@ -44,4 +51,33 @@ resource "aws_subnet" "ozy_private_subnet" {
     tags = {
         Name = "ozy_private_${count.index + 1}"
     }
+}
+
+resource "aws_internet_gateway" "ozy_igw" {
+    vpc_id = aws_vpc.ozy_vpc.id
+
+  tags = {
+    Name = "ozy_igw"
+  }
+}
+resource "aws_route_table" "ozy_public_rt" {
+    vpc_id = aws_vpc.ozy_vpc.id
+
+  tags = {
+    Name = "ozy_public_rt"
+  }
+}
+
+resource "aws_route" "default_route" {
+    route_table_id = aws_route_table.ozy_public_rt.id
+    destination_cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.ozy_igw.id
+}
+
+resource "aws_default_route_table" "ozy_private_rt" {
+    default_route_table_id = aws_vpc.ozy_vpc.default_route_table_id
+    
+    tags = {
+    Name = "ozy_private_rt"
+  }
 }
